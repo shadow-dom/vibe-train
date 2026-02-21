@@ -6,7 +6,7 @@ COPY *.go ./
 RUN CGO_ENABLED=0 go build -o runner .
 
 FROM golang:1.22-alpine
-RUN apk add --no-cache git
+RUN apk add --no-cache git nodejs npm
 COPY --from=builder /build/runner /usr/local/bin/runner
 ENTRYPOINT ["runner"]
 CMD ["--courses-root", "/courses", "--port", "8081"]

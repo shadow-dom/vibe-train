@@ -1,0 +1,19 @@
+{
+  "name": "solidjs-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "solid-js": "^1.9.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "vite-plugin-solid": "^2.11.0",
+    "vitest": "^3.0.0",
+    "jsdom": "^25.0.0",
+    "@solidjs/testing-library": "^0.8.0",
+    "@testing-library/jest-dom": "^6.6.0"
+  }
+}

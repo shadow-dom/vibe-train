@@ -1,0 +1,48 @@
+id: "solidjs-dashboard"
+title: "Build an Interactive Dashboard with Solid.js"
+description: "Learn Solid.js from scratch by building an interactive dashboard. Start with reactive signals, progress through components and stores, and finish with a fully composed dashboard application."
+language: javascript
+difficulty: beginner
+estimated_hours: 10
+prerequisites:
+  - "Basic JavaScript (variables, functions, arrays, objects)"
+  - "Familiarity with the command line"
+  - "Node.js 18+ installed"
+tags:
+  - javascript
+  - solid-js
+  - reactive
+  - components
+  - dashboard
+
+runtime:
+  check: "node --version"
+  min_version: "18"
+
+dependencies:
+  strategy: shared
+  install: "npm install"
+
+lesson_mode: cumulative
+
+lessons:
+  - slug: 01-signals
+    title: "Reactive Signals"
+  - slug: 02-derived-state
+    title: "Derived State & Memos"
+  - slug: 03-effects
+    title: "Effects & Lifecycle"
+  - slug: 04-first-component
+    title: "Your First Component"
+  - slug: 05-props-children
+    title: "Props & Composition"
+  - slug: 06-control-flow
+    title: "Lists & Conditional Rendering"
+  - slug: 07-stores
+    title: "Stores & Complex State"
+  - slug: 08-context-theme
+    title: "Context & Theme Toggle"
+  - slug: 09-async-data
+    title: "Async Data & Resources"
+  - slug: 10-full-dashboard
+    title: "Assembling the Dashboard"
