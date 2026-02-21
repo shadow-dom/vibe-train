@@ -67,12 +67,25 @@ func BuildWorkspace(course *Course, slug string, code map[string]string) (string
 
 	// 2. Write student code files
 	for filename, content := range code {
-		// Sanitize filename
-		if strings.Contains(filename, "..") || strings.Contains(filename, "/") {
+		// Sanitize filename — reject path traversal
+		if strings.Contains(filename, "..") {
 			os.RemoveAll(tmpDir)
 			return "", fmt.Errorf("invalid filename: %s", filename)
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, filename), []byte(content), 0644); err != nil {
+		dest := filepath.Join(tmpDir, filename)
+		// Ensure the resolved path stays within tmpDir
+		if !strings.HasPrefix(filepath.Clean(dest), filepath.Clean(tmpDir)+string(os.PathSeparator)) {
+			os.RemoveAll(tmpDir)
+			return "", fmt.Errorf("invalid filename: %s", filename)
+		}
+		// Create parent directories for nested files (e.g. "subdir/file.yaml")
+		if dir := filepath.Dir(dest); dir != tmpDir {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				os.RemoveAll(tmpDir)
+				return "", fmt.Errorf("creating directory for %s: %w", filename, err)
+			}
+		}
+		if err := os.WriteFile(dest, []byte(content), 0644); err != nil {
 			os.RemoveAll(tmpDir)
 			return "", fmt.Errorf("writing %s: %w", filename, err)
 		}

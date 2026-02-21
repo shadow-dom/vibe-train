@@ -18,8 +18,9 @@ func newServer(courses []*Course) http.Handler {
 	mux.HandleFunc("GET /api/courses/{id}", handleGetCourse(courseIndex))
 	mux.HandleFunc("GET /api/courses/{id}/lessons/{slug}", handleGetLesson(courseIndex))
 
-	// WebSocket endpoint
+	// WebSocket endpoints
 	mux.HandleFunc("/api/run", handleRun(courseIndex))
+	mux.HandleFunc("/api/terminal", handleTerminal(courseIndex))
 
 	return corsMiddleware(mux)
 }

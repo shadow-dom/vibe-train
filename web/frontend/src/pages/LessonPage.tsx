@@ -6,6 +6,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { LessonContent } from "@/components/LessonContent";
 import { CodeEditor } from "@/components/CodeEditor";
 import { TestOutput } from "@/components/TestOutput";
+import { TerminalPanel } from "@/components/TerminalPanel";
 import { useTestRunner } from "@/hooks/useTestRunner";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export function LessonPage() {
   const { output, isRunning, exitCode, runTests } = useTestRunner();
   const [code, setCode] = useState("");
   const [showSolution, setShowSolution] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
 
   const { data: course } = useQuery({
     queryKey: ["course", id],
@@ -43,9 +45,11 @@ export function LessonPage() {
   if (isLoading) return <div className="p-8 text-muted-foreground">Loading lesson...</div>;
   if (!lesson) return <div className="p-8 text-destructive">Lesson not found.</div>;
 
+  const isKubernetes = course?.language === "kubernetes";
   const mainFile = Object.keys(lesson.starter_code)[0] ?? "main.go";
 
   const handleRun = () => {
+    setShowTerminal(false);
     runTests(id!, slug!, { [mainFile]: code });
   };
 
@@ -99,7 +103,7 @@ export function LessonPage() {
 
         <ResizableHandle withHandle />
 
-        {/* Right panel: editor + output */}
+        {/* Right panel: editor + bottom panel */}
         <ResizablePanel defaultSize={55} minSize={30}>
           <ResizablePanelGroup orientation="vertical">
             {/* Code editor */}
@@ -118,6 +122,15 @@ export function LessonPage() {
                     >
                       {showSolution ? "Hide Solution" : "Solution"}
                     </Button>
+                    {isKubernetes && (
+                      <Button
+                        size="sm"
+                        variant={showTerminal ? "secondary" : "outline"}
+                        onClick={() => setShowTerminal(!showTerminal)}
+                      >
+                        Terminal
+                      </Button>
+                    )}
                     <Button size="sm" onClick={handleRun} disabled={isRunning}>
                       {isRunning ? "Running..." : "Run Tests"}
                     </Button>
@@ -136,19 +149,43 @@ export function LessonPage() {
 
             <ResizableHandle withHandle />
 
-            {/* Test output */}
+            {/* Bottom panel: test output or terminal */}
             <ResizablePanel defaultSize={40} minSize={15}>
               <div className="h-full flex flex-col">
                 <div className="flex items-center px-3 py-2 border-b bg-card">
-                  <span className="text-sm font-medium">Test Output</span>
-                  {exitCode !== null && (
+                  {isKubernetes ? (
+                    <div className="flex gap-3">
+                      <button
+                        className={`text-sm font-medium ${!showTerminal ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        onClick={() => setShowTerminal(false)}
+                      >
+                        Test Output
+                      </button>
+                      <button
+                        className={`text-sm font-medium ${showTerminal ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        onClick={() => setShowTerminal(true)}
+                      >
+                        Terminal
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium">Test Output</span>
+                  )}
+                  {exitCode !== null && !showTerminal && (
                     <span className={`ml-2 text-xs font-mono ${exitCode === 0 ? "text-green-500" : "text-red-500"}`}>
                       exit {exitCode}
                     </span>
                   )}
                 </div>
-                <div className="flex-1 overflow-hidden">
-                  <TestOutput lines={output} isRunning={isRunning} />
+                <div className="flex-1 overflow-hidden relative">
+                  <div className={`absolute inset-0 ${showTerminal ? "hidden" : ""}`}>
+                    <TestOutput lines={output} isRunning={isRunning} />
+                  </div>
+                  {isKubernetes && id && (
+                    <div className={`absolute inset-0 ${showTerminal ? "" : "hidden"}`}>
+                      <TerminalPanel courseId={id} visible={showTerminal} />
+                    </div>
+                  )}
                 </div>
               </div>
             </ResizablePanel>

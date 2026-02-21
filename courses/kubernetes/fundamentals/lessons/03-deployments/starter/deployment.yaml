@@ -1,0 +1,20 @@
+# deployment.yaml — Create a Deployment
+# TODO: Complete this manifest for a Deployment named "echo-deploy"
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-deploy
+spec:
+  # TODO: Set replicas to 2
+  selector:
+    matchLabels:
+      # TODO: Match the pod template labels
+  template:
+    metadata:
+      labels:
+        # TODO: Set labels
+    spec:
+      containers:
+        - name: echo
+          # TODO: Set image, args, and port

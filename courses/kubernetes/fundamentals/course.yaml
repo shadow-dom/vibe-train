@@ -1,0 +1,40 @@
+id: "k8s-fundamentals"
+title: "Kubernetes Fundamentals with K3d"
+description: "Learn Kubernetes hands-on by deploying real workloads to a live cluster. Each lesson spins up a K3d cluster inside Docker, gives you a challenge, and validates your work with automated tests against the actual Kubernetes API."
+language: kubernetes
+difficulty: beginner
+estimated_hours: 10
+prerequisites:
+  - "Basic command-line / shell usage"
+  - "Familiarity with containers (docker run, docker build)"
+tags: [kubernetes, k3d, k3s, containers, devops, orchestration]
+
+runtime:
+  check: "k3d version && kubectl version --client"
+  min_version: "5.0"
+
+dependencies:
+  strategy: shared
+  install: "bash shared/setup.sh"
+
+test_runner: "bash tests/validate.sh"
+
+lesson_mode: cumulative
+
+lessons:
+  - slug: 01-cluster-basics
+    title: "Your First Cluster"
+  - slug: 02-pods
+    title: "Running Pods"
+  - slug: 03-deployments
+    title: "Deployments & Scaling"
+  - slug: 04-services
+    title: "Exposing Services"
+  - slug: 05-configmaps-secrets
+    title: "Configuration & Secrets"
+  - slug: 06-persistent-storage
+    title: "Persistent Storage"
+  - slug: 07-ingress
+    title: "Ingress & Routing"
+  - slug: 08-namespaces-rbac
+    title: "Namespaces & Access Control"

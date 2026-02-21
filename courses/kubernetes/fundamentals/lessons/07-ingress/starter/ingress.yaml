@@ -1,0 +1,12 @@
+# ingress.yaml
+# TODO: Create an Ingress that routes echo.local → echo-svc:80
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    # TODO: Add a rule for host "echo.local"
+    #   routing path "/" (Prefix) to service echo-svc port 80

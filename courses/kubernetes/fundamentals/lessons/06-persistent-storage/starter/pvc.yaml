@@ -1,0 +1,10 @@
+# pvc.yaml
+# TODO: Create a PersistentVolumeClaim named "notes-pvc"
+#   requesting 64Mi with ReadWriteOnce access mode.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: notes-pvc
+spec:
+  # TODO: Set accessModes and resources.requests.storage

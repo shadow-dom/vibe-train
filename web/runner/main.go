@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 func main() {
@@ -19,6 +22,28 @@ func main() {
 	log.Printf("loaded %d course(s) from %s", len(courses), *coursesRoot)
 	for _, c := range courses {
 		log.Printf("  - %s (%d lessons)", c.ID, len(c.Lessons))
+	}
+
+	// Pre-spin clusters for kubernetes courses in the background
+	for _, c := range courses {
+		if c.Language == "kubernetes" {
+			setupScript := filepath.Join(c.Path, "shared", "setup.sh")
+			if _, err := os.Stat(setupScript); err == nil {
+				go func(course *Course, script string) {
+					log.Printf("pre-spinning cluster for %s...", course.ID)
+					cmd := exec.Command("bash", script)
+					cmd.Dir = course.Path
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					cmd.Env = os.Environ()
+					if err := cmd.Run(); err != nil {
+						log.Printf("warning: cluster setup for %s failed: %v", course.ID, err)
+					} else {
+						log.Printf("cluster for %s is ready", course.ID)
+					}
+				}(c, setupScript)
+			}
+		}
 	}
 
 	srv := newServer(courses)

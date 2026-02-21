@@ -1,0 +1,10 @@
+# service.yaml — Expose the Deployment
+# TODO: Create a ClusterIP Service named "echo-svc"
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-svc
+spec:
+  # TODO: Set the selector to match pods with app=echo
+  # TODO: Map port 80 to targetPort 5678

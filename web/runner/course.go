@@ -10,17 +10,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type CourseDeps struct {
+	Strategy string `yaml:"strategy" json:"strategy"`
+	Install  string `yaml:"install" json:"install"`
+}
+
 type Course struct {
-	ID             string   `yaml:"id" json:"id"`
-	Title          string   `yaml:"title" json:"title"`
-	Description    string   `yaml:"description" json:"description"`
-	Language       string   `yaml:"language" json:"language"`
-	Difficulty     string   `yaml:"difficulty" json:"difficulty"`
-	EstimatedHours int      `yaml:"estimated_hours" json:"estimated_hours"`
-	Prerequisites  []string `yaml:"prerequisites" json:"prerequisites"`
-	Tags           []string `yaml:"tags" json:"tags"`
-	Lessons        []Lesson `yaml:"lessons" json:"lessons"`
-	Path           string   `yaml:"-" json:"-"` // filesystem path to course dir
+	ID             string      `yaml:"id" json:"id"`
+	Title          string      `yaml:"title" json:"title"`
+	Description    string      `yaml:"description" json:"description"`
+	Language       string      `yaml:"language" json:"language"`
+	Difficulty     string      `yaml:"difficulty" json:"difficulty"`
+	EstimatedHours int         `yaml:"estimated_hours" json:"estimated_hours"`
+	Prerequisites  []string    `yaml:"prerequisites" json:"prerequisites"`
+	Tags           []string    `yaml:"tags" json:"tags"`
+	TestRunner     string      `yaml:"test_runner" json:"test_runner,omitempty"`
+	Dependencies   *CourseDeps `yaml:"dependencies" json:"dependencies,omitempty"`
+	LessonMode     string      `yaml:"lesson_mode" json:"lesson_mode,omitempty"`
+	Lessons        []Lesson    `yaml:"lessons" json:"lessons"`
+	Path           string      `yaml:"-" json:"-"` // filesystem path to course dir
 }
 
 type Lesson struct {
@@ -117,22 +125,26 @@ func LoadLessonDetail(course *Course, slug string) (*LessonDetail, error) {
 	return detail, nil
 }
 
-// readCodeDir reads all files in a directory and returns filename -> content map.
+// readCodeDir recursively reads all files in a directory and returns relative-path -> content map.
 func readCodeDir(dir string) map[string]string {
 	files := make(map[string]string)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return files
-	}
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+	filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			continue
+			return err
 		}
-		files[e.Name()] = string(data)
-	}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		files[rel] = string(data)
+		return nil
+	})
 	return files
 }

@@ -1,0 +1,16 @@
+# pod.yaml — Define a Pod
+# TODO: Fill in the manifest to create a pod named "hello-pod"
+#   with label app=hello, running the hashicorp/http-echo image.
+#   See the README for the full requirements.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-pod
+  # TODO: Add labels
+spec:
+  containers:
+    - name: hello
+      # TODO: Set the image
+      # TODO: Set the args
+      # TODO: Set the container port

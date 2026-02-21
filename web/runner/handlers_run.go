@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -29,7 +31,8 @@ type RunMessage struct {
 	Data string `json:"data"`
 }
 
-const runTimeout = 30 * time.Second
+const defaultRunTimeout = 30 * time.Second
+const kubernetesRunTimeout = 3 * time.Minute
 
 func handleRun(index map[string]*Course) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -68,30 +71,61 @@ func handleRun(index map[string]*Course) http.HandlerFunc {
 		}
 		defer os.RemoveAll(workDir)
 
-		// Determine test command based on language
+		// Determine test command and timeout based on language
 		var cmdName string
 		var cmdArgs []string
+		var cmdDir string
+		var cmdEnv []string
+		timeout := defaultRunTimeout
+
 		switch course.Language {
 		case "go":
 			cmdName = "go"
 			cmdArgs = []string{"test", "-v", "-count=1", "./..."}
+			cmdDir = workDir
 		case "python":
 			cmdName = "python"
 			cmdArgs = []string{"-m", "pytest", "-v"}
+			cmdDir = workDir
 		case "javascript", "typescript":
 			cmdName = "npm"
 			cmdArgs = []string{"test"}
+			cmdDir = workDir
+		case "kubernetes":
+			timeout = kubernetesRunTimeout
+			// Validate lesson slug for path safety
+			if strings.Contains(req.LessonSlug, "..") || strings.Contains(req.LessonSlug, "/") {
+				sendMsg(conn, "error", "invalid lesson slug")
+				return
+			}
+			courseDir := course.Path
+			lessonDir := filepath.Join(courseDir, "lessons", req.LessonSlug)
+
+			// Run setup.sh first (from shared dir), then validate.sh
+			setupScript := filepath.Join(courseDir, "shared", "setup.sh")
+			validateScript := filepath.Join(lessonDir, "tests", "validate.sh")
+
+			cmdName = "bash"
+			cmdArgs = []string{"-c", fmt.Sprintf("bash %s && bash %s", setupScript, validateScript)}
+			cmdDir = lessonDir
+			cmdEnv = append(os.Environ(),
+				"WORK_DIR="+workDir,
+				"COURSE_DIR="+courseDir,
+			)
 		default:
 			sendMsg(conn, "error", "unsupported language: "+course.Language)
 			return
 		}
 
 		// Run with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		cmd := exec.CommandContext(ctx, cmdName, cmdArgs...)
-		cmd.Dir = workDir
+		cmd.Dir = cmdDir
+		if cmdEnv != nil {
+			cmd.Env = cmdEnv
+		}
 
 		// Capture stdout and stderr
 		stdout, err := cmd.StdoutPipe()
@@ -139,7 +173,7 @@ func handleRun(index map[string]*Course) http.HandlerFunc {
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				exitCode = exitErr.ExitCode()
 			} else if ctx.Err() == context.DeadlineExceeded {
-				sendMsg(conn, "error", "test timed out after 30s")
+				sendMsg(conn, "error", fmt.Sprintf("test timed out after %s", timeout))
 				exitCode = -1
 			} else {
 				exitCode = -1

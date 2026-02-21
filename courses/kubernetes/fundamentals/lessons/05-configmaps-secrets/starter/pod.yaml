@@ -1,0 +1,14 @@
+# pod.yaml
+# TODO: Create a Pod named "config-pod" that loads env vars
+#   from the ConfigMap and Secret.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-pod
+spec:
+  containers:
+    - name: app
+      image: busybox
+      command: ["sleep", "3600"]
+      # TODO: Use envFrom to load all keys from app-config and app-secret

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-pod
+  labels:
+    app: hello
+spec:
+  containers:
+    - name: hello
+      image: hashicorp/http-echo
+      args: ["-text=Hello from Vibe Train!"]
+      ports:
+        - containerPort: 5678
