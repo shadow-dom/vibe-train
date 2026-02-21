@@ -1,0 +1,25 @@
+id: ""                            # e.g. "go-api"
+title: ""                         # e.g. "Build a REST API in Go"
+description: ""
+language: ""                      # go | rust | javascript | typescript | python | kubernetes | shell
+difficulty: ""                    # beginner | intermediate | advanced
+estimated_hours: 0
+prerequisites: []
+tags: []
+
+runtime:
+  check: ""                       # e.g. "go version"
+  min_version: ""                 # e.g. "1.22"
+
+dependencies:
+  strategy: shared                # shared | per-lesson
+  install: ""                     # e.g. "go mod tidy"
+
+lesson_mode: cumulative           # cumulative | isolated
+
+# test_runner: ""                 # optional custom test command override
+                                  # e.g. "bash tests/run.sh"
+
+lessons: []                       # populated as lessons are added
+# - slug: 01-hello-http
+#   title: "Hello, HTTP Server"

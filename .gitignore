@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.env
+*.local
+
+# Go
+/web/runner/runner
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

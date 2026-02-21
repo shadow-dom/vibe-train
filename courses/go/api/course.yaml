@@ -1,0 +1,43 @@
+id: "go-task-api"
+title: "Build a Task Manager REST API in Go"
+description: "Build a complete Task Manager REST API from scratch using Go's standard library. Learn HTTP servers, routing, JSON handling, middleware, file persistence, testing, and configuration."
+language: go
+difficulty: beginner
+estimated_hours: 8
+prerequisites:
+  - "Basic Go syntax (variables, functions, structs, slices)"
+  - "Familiarity with the command line"
+tags:
+  - go
+  - rest-api
+  - http
+  - json
+  - testing
+
+runtime:
+  check: "go version"
+  min_version: "1.22"
+
+dependencies:
+  strategy: shared
+  install: "go mod tidy"
+
+lesson_mode: cumulative
+
+lessons:
+  - slug: 01-hello-http
+    title: "Hello, HTTP Server"
+  - slug: 02-routing
+    title: "Routing & Methods"
+  - slug: 03-json-crud
+    title: "JSON & CRUD"
+  - slug: 04-error-handling
+    title: "Error Handling"
+  - slug: 05-middleware
+    title: "Middleware"
+  - slug: 06-persistence
+    title: "File Persistence"
+  - slug: 07-testing
+    title: "Testing"
+  - slug: 08-config
+    title: "Configuration & Polish"
