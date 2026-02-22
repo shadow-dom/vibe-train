@@ -13,6 +13,7 @@ import (
 func main() {
 	coursesRoot := flag.String("courses-root", "/courses", "path to courses directory")
 	port := flag.Int("port", 8081, "server port")
+	dbPath := flag.String("db-path", "/data/vibe-train.db", "path to SQLite database")
 	flag.Parse()
 
 	courses, err := ScanCourses(*coursesRoot)
@@ -46,7 +47,13 @@ func main() {
 		}
 	}
 
-	srv := newServer(courses)
+	store, err := OpenStore(*dbPath)
+	if err != nil {
+		log.Fatalf("opening database: %v", err)
+	}
+	log.Printf("database opened at %s", *dbPath)
+
+	srv := newServer(courses, store)
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("runner listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, srv))

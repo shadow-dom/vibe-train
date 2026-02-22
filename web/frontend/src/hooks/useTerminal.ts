@@ -1,6 +1,8 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+
+type TerminalStatus = "connected" | "disconnected";
 
 interface UseTerminalOptions {
   courseId: string;
@@ -10,26 +12,28 @@ export function useTerminal({ courseId }: UseTerminalOptions) {
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [status, setStatus] = useState<TerminalStatus>("disconnected");
 
   const refit = useCallback(() => {
     fitRef.current?.fit();
   }, []);
 
-  const attach = useCallback(
-    (el: HTMLDivElement | null) => {
-      // Cleanup previous
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      if (termRef.current) {
-        termRef.current.dispose();
-        termRef.current = null;
-        fitRef.current = null;
-      }
+  const cleanup = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (termRef.current) {
+      termRef.current.dispose();
+      termRef.current = null;
+      fitRef.current = null;
+    }
+    setStatus("disconnected");
+  }, []);
 
-      if (!el) return;
-
+  const createSession = useCallback(
+    (el: HTMLDivElement) => {
       const term = new Terminal({
         cursorBlink: true,
         fontSize: 13,
@@ -55,6 +59,7 @@ export function useTerminal({ courseId }: UseTerminalOptions) {
 
       ws.onopen = () => {
         ws.send(JSON.stringify({ type: "init", course_id: courseId }));
+        setStatus("connected");
       };
 
       ws.onmessage = (event) => {
@@ -65,7 +70,12 @@ export function useTerminal({ courseId }: UseTerminalOptions) {
       };
 
       ws.onclose = () => {
+        setStatus("disconnected");
         term.write("\r\n\x1b[90m[session ended]\x1b[0m\r\n");
+      };
+
+      ws.onerror = () => {
+        setStatus("disconnected");
       };
 
       // Send keystrokes
@@ -85,6 +95,23 @@ export function useTerminal({ courseId }: UseTerminalOptions) {
     [courseId]
   );
 
+  const attach = useCallback(
+    (el: HTMLDivElement | null) => {
+      cleanup();
+      containerRef.current = el;
+      if (!el) return;
+      createSession(el);
+    },
+    [cleanup, createSession]
+  );
+
+  const reconnect = useCallback(() => {
+    cleanup();
+    const el = containerRef.current;
+    if (!el) return;
+    createSession(el);
+  }, [cleanup, createSession]);
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => fitRef.current?.fit();
@@ -100,5 +127,5 @@ export function useTerminal({ courseId }: UseTerminalOptions) {
     };
   }, []);
 
-  return { attach, refit };
+  return { attach, refit, status, reconnect };
 }

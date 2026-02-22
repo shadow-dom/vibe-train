@@ -31,7 +31,10 @@ export function CourseListPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  {course.lesson_count} lessons · ~{course.estimated_hours}h
+                  {course.completed_lessons
+                    ? `${course.completed_lessons} / ${course.lesson_count} completed`
+                    : `${course.lesson_count} lessons`}
+                  {" "}· ~{course.estimated_hours}h
                 </p>
               </CardContent>
             </Card>

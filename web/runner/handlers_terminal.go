@@ -1,14 +1,22 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"sync"
+	"time"
 
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
+)
+
+const (
+	pingInterval = 30 * time.Second
+	pongTimeout  = 45 * time.Second
 )
 
 type TerminalMessage struct {
@@ -39,28 +47,37 @@ func handleTerminal(index map[string]*Course) http.HandlerFunc {
 
 		var initMsg TerminalMessage
 		if err := json.Unmarshal(msg, &initMsg); err != nil || initMsg.Type != "init" {
-			sendMsg(conn, "error", "expected init message")
+			sendMsg(conn, "error", "expected init message", 0)
 			return
 		}
 
 		course, ok := index[initMsg.CourseID]
 		if !ok {
-			sendMsg(conn, "error", "course not found: "+initMsg.CourseID)
+			sendMsg(conn, "error", "course not found: "+initMsg.CourseID, 0)
 			return
 		}
 
+		// Create a writable workspace for the terminal session
+		termDir, err := os.MkdirTemp("", "vibe-term-*")
+		if err != nil {
+			sendMsg(conn, "error", "failed to create workspace: "+err.Error(), 0)
+			return
+		}
+		defer os.RemoveAll(termDir)
+
 		// Start bash with PTY — inherit env so kubectl picks up kubeconfig from setup.sh
 		cmd := exec.Command("bash", "--login")
-		cmd.Dir = course.Path
+		cmd.Dir = termDir
 		cmd.Env = append(os.Environ(),
 			"TERM=xterm-256color",
 			"COURSE_DIR="+course.Path,
+			"HOME="+os.Getenv("HOME"),
 			"PS1=\\[\\e[32m\\]k8s\\[\\e[0m\\]:\\w$ ",
 		)
 
 		ptmx, err := pty.Start(cmd)
 		if err != nil {
-			sendMsg(conn, "error", "pty start error: "+err.Error())
+			sendMsg(conn, "error", "pty start error: "+err.Error(), 0)
 			return
 		}
 		defer func() {
@@ -69,17 +86,55 @@ func handleTerminal(index map[string]*Course) http.HandlerFunc {
 			cmd.Wait()
 		}()
 
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+
+		// Mutex to protect concurrent WebSocket writes (pinger + pty reader)
+		var wsMu sync.Mutex
+
+		// Set up pong handler and initial read deadline
+		conn.SetReadDeadline(time.Now().Add(pongTimeout))
+		conn.SetPongHandler(func(string) error {
+			conn.SetReadDeadline(time.Now().Add(pongTimeout))
+			return nil
+		})
+
+		// Ping ticker goroutine
+		go func() {
+			ticker := time.NewTicker(pingInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					wsMu.Lock()
+					err := conn.WriteMessage(websocket.PingMessage, nil)
+					wsMu.Unlock()
+					if err != nil {
+						cancel()
+						return
+					}
+				}
+			}
+		}()
+
 		// Read from PTY -> send to WebSocket
 		go func() {
 			buf := make([]byte, 4096)
 			for {
 				n, err := ptmx.Read(buf)
 				if err != nil {
+					cancel()
 					return
 				}
 				out := TerminalMessage{Type: "output", Data: string(buf[:n])}
 				b, _ := json.Marshal(out)
-				if err := conn.WriteMessage(websocket.TextMessage, b); err != nil {
+				wsMu.Lock()
+				err = conn.WriteMessage(websocket.TextMessage, b)
+				wsMu.Unlock()
+				if err != nil {
+					cancel()
 					return
 				}
 			}
@@ -87,6 +142,12 @@ func handleTerminal(index map[string]*Course) http.HandlerFunc {
 
 		// Read from WebSocket -> write to PTY
 		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
 				return

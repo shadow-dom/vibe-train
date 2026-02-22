@@ -13,54 +13,54 @@ NC='\033[0m'
 
 assert_eq() {
   local description="$1" expected="$2" actual="$3"
-  ((TOTAL++))
+  TOTAL=$((TOTAL + 1))
   if [[ "$expected" == "$actual" ]]; then
     echo -e "  ${GREEN}✓${NC} ${description}"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo -e "  ${RED}✗${NC} ${description}"
     echo -e "    expected: ${YELLOW}${expected}${NC}"
     echo -e "    actual:   ${YELLOW}${actual}${NC}"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
 assert_contains() {
   local description="$1" haystack="$2" needle="$3"
-  ((TOTAL++))
+  TOTAL=$((TOTAL + 1))
   if echo "$haystack" | grep -q "$needle"; then
     echo -e "  ${GREEN}✓${NC} ${description}"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo -e "  ${RED}✗${NC} ${description}"
     echo -e "    '${YELLOW}${needle}${NC}' not found in output"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
 assert_not_empty() {
   local description="$1" value="$2"
-  ((TOTAL++))
+  TOTAL=$((TOTAL + 1))
   if [[ -n "$value" ]]; then
     echo -e "  ${GREEN}✓${NC} ${description}"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo -e "  ${RED}✗${NC} ${description}"
     echo -e "    value was empty"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
 assert_ge() {
   local description="$1" expected="$2" actual="$3"
-  ((TOTAL++))
+  TOTAL=$((TOTAL + 1))
   if (( actual >= expected )); then
     echo -e "  ${GREEN}✓${NC} ${description}"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo -e "  ${RED}✗${NC} ${description}"
     echo -e "    expected >= ${YELLOW}${expected}${NC}, got ${YELLOW}${actual}${NC}"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 

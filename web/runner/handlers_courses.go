@@ -6,18 +6,24 @@ import (
 )
 
 type CourseListItem struct {
-	ID             string   `json:"id"`
-	Title          string   `json:"title"`
-	Description    string   `json:"description"`
-	Language       string   `json:"language"`
-	Difficulty     string   `json:"difficulty"`
-	EstimatedHours int      `json:"estimated_hours"`
-	Tags           []string `json:"tags"`
-	LessonCount    int      `json:"lesson_count"`
+	ID               string   `json:"id"`
+	Title            string   `json:"title"`
+	Description      string   `json:"description"`
+	Language         string   `json:"language"`
+	Difficulty       string   `json:"difficulty"`
+	EstimatedHours   int      `json:"estimated_hours"`
+	Tags             []string `json:"tags"`
+	LessonCount      int      `json:"lesson_count"`
+	CompletedLessons int      `json:"completed_lessons,omitempty"`
 }
 
-func handleListCourses(courses []*Course) http.HandlerFunc {
+func handleListCourses(courses []*Course, store *Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var counts map[string]int
+		if user, err := getUserFromCookie(r, store); err == nil {
+			counts, _ = store.GetCompletedLessonCounts(user.ID)
+		}
+
 		items := make([]CourseListItem, len(courses))
 		for i, c := range courses {
 			items[i] = CourseListItem{
@@ -30,12 +36,20 @@ func handleListCourses(courses []*Course) http.HandlerFunc {
 				Tags:           c.Tags,
 				LessonCount:    len(c.Lessons),
 			}
+			if counts != nil {
+				items[i].CompletedLessons = counts[c.ID]
+			}
 		}
 		writeJSON(w, http.StatusOK, items)
 	}
 }
 
-func handleGetCourse(index map[string]*Course) http.HandlerFunc {
+type CourseDetail struct {
+	*Course
+	UserProgress map[string]bool `json:"user_progress,omitempty"`
+}
+
+func handleGetCourse(index map[string]*Course, store *Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		course, ok := index[id]
@@ -43,7 +57,13 @@ func handleGetCourse(index map[string]*Course) http.HandlerFunc {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "course not found"})
 			return
 		}
-		writeJSON(w, http.StatusOK, course)
+
+		detail := CourseDetail{Course: course}
+		if user, err := getUserFromCookie(r, store); err == nil {
+			detail.UserProgress, _ = store.GetCompletedLessonsMap(user.ID, id)
+		}
+
+		writeJSON(w, http.StatusOK, detail)
 	}
 }
 
